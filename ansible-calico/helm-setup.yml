@@ -1,0 +1,33 @@
+- hosts: masters
+  tasks:
+    - name: initialize helm
+      become_user: centos
+      args:
+        chdir: $HOME
+      shell: |
+        kubectl create clusterrolebinding tiller-cluster-rule --clusterrole=cluster-admin --serviceaccount=kube-system:tiller
+        kubectl create serviceaccount --namespace kube-system tiller
+        helm init --net-host --service-account tiller --override "spec.template.spec.tolerations[0].effect=NoSchedule" --override "spec.template.spec.tolerations[0].key=node.kubernetes.io/not-ready" --override "spec.template.spec.tolerations[0].operator=Exists"
+        curl -O -L https://s3.amazonaws.com/tigera-public/ee/charts/tigera-secure-ee-core-v2.5.1-0.tgz
+        curl -O -L https://s3.amazonaws.com/tigera-public/ee/charts/tigera-secure-ee-v2.5.1-0.tgz
+        sleep 20
+        helm install ./tigera-secure-ee-core-v2.5.1-0.tgz --set-file imagePullSecrets.cnx-pull-secret=./config.json
+        sleep 90
+        kubectl apply -f ./tigera-license.yaml
+        sleep 10
+        kubectl apply -f https://docs.tigera.io/v2.5/getting-started/kubernetes/installation/hosted/cnx/1.7/cnx-policy.yaml
+        sleep 10
+        kubectl apply -f https://docs.tigera.io/v2.5/getting-started/kubernetes/installation/helm/tigera-secure-ee/operator-crds.yaml
+        helm install ./tigera-secure-ee-v2.5.1-0.tgz --namespace calico-monitoring --set createCustomResources=false --set-file imagePullSecrets.cnx-pull-secret=./config.json
+        sleep 120
+        kubectl create clusterrolebinding admin-network-admin --clusterrole=network-admin --user=admin
+        kubectl create clusterrolebinding admin-tigera --clusterrole=tigera-ui-user --user=admin
+        kubectl apply -f ./tsee-nodeports.yaml
+        sleep 30
+        kubectl apply -f https://docs.tigera.io/v2.5/getting-started/kubernetes/installation/hosted/kubernetes-datastore/calicoctl.yaml
+        kubectl apply -f https://docs.tigera.io/v2.5/getting-started/kubernetes/installation/hosted/kubernetes-datastore/calicoq.yaml
+        echo alias calicoq=\"kubectl exec -i -n kube-system calicoq /calicoq -- \" >> ~/.bashrc
+        echo alias calicoctl=\"kubectl exec -i -n kube-system calicoctl /calicoctl -- \" >> ~/.bashrc
+
+
+

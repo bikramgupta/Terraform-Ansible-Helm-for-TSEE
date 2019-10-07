@@ -1,0 +1,7 @@
+apiVersion: projectcalico.org/v3
+kind: LicenseKey
+metadata:
+ creationTimestamp: null
+ name: default
+spec:
+ <<<<CERT and LICENCE KEY GOES HERE >>>>

@@ -1,0 +1,8 @@
+{
+  "auths": {
+    "quay.io": {
+      "auth": "<<<PUT YOUR AUTH HERE",
+      "email": ""
+    }
+  }
+}

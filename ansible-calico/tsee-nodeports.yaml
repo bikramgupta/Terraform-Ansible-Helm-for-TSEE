@@ -1,0 +1,37 @@
+# accessed at https://<host>:<port>, add https://<host>:<port>/login/oidc/callback
+# to the redirect URI list for the project.
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    k8s-app: cnx-manager
+  name: cnx-manager
+  namespace: calico-monitoring
+spec:
+  selector:
+    k8s-app: cnx-manager
+  ports:
+    - port: 9443
+      targetPort: 9443
+      nodePort: 30003
+  type: NodePort
+
+---
+
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    name: kibana-tigera-elasticsearch
+  name: tigera-kibana
+  namespace: calico-monitoring
+spec:
+  selector:
+    name: kibana-tigera-elasticsearch
+  ports:
+    - port: 5601
+      targetPort: 5601
+      nodePort: 31003
+  type: NodePort
+
+---

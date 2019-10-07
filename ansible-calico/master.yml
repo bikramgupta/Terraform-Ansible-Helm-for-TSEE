@@ -1,0 +1,52 @@
+- hosts: masters
+  become: yes
+  tasks:
+    - name: initialize the cluster
+      shell: kubeadm init --pod-network-cidr=192.168.0.0/16 >> ~/cluster_initialized.txt
+      args:
+        chdir: $HOME
+        creates: cluster_initialized.txt
+
+    - name: create .kube directory
+      become: yes
+      become_user: centos
+      file:
+        path: $HOME/.kube
+        state: directory
+        mode: 0755
+
+    - name: copy admin.conf to user's kube config
+      copy:
+        src: /etc/kubernetes/admin.conf
+        dest: /home/centos/.kube/config
+        remote_src: yes
+        owner: centos
+
+    - name: copy helm binary to remote
+      copy:
+        src: ./helm-linux/helm
+        dest: /usr/local/bin/helm
+        mode: 0755
+
+    - name: copy tsee-nodeports
+      copy:
+        src: ./tsee-nodeports.yaml
+        dest: /home/centos
+        owner: centos
+
+
+    - name: Copy over basic auth file
+      copy:
+        src: ./basic_auth.csv
+        dest: /etc/kubernetes/pki/basic_auth.csv
+        mode: 0644
+      tags:
+        - basicauth
+
+    - name: Reconfigure the API server with basic auth
+      shell: |
+        sed -i "/- kube-apiserver/a\    - --basic-auth-file=/etc/kubernetes/pki/basic_auth.csv" /etc/kubernetes/manifests/kube-apiserver.yaml
+        systemctl restart kubelet
+      tags:
+        - basicauth
+
